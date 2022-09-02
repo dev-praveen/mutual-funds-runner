@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+
+<properties>
+    <entry key="mfInsertQuery">
+        <![CDATA[
+            INSERT INTO PUBLIC.MUTUAL_FUND(
+              FUND_SYMBOL, QUOTE_TYPE, REGION, FUND_SHORT_NAME,
+              FUND_LONG_NAME, CURRENCY, INITIAL_INVESTMENT,
+              SUBSEQUENT_INVESTMENT, FUND_CATEGORY,
+              FUND_FAMILY, EXCHANGE_CODE, EXCHANGE_NAME,
+              EXCHANGE_TIMEZONE, MANAGEMENT_NAME,
+              MANAGEMENT_BIO, MANAGEMENT_START_DATE,
+              TOTAL_NET_ASSETS, YEAR_TO_DATE_RETURN
+            )
+            VALUES
+              (
+                 :fundSymbol, :quoteType, :region,
+                 :fundShortName, :fundLongName, :currency,
+                 :initialInvestment, :subsequentInvestment,
+                 :fundCategory, :fundFamily, :exchangeCode,
+                 :exchangeName, :exchangeTimeZone,
+                 :managementName, :managementBio,
+                 :managementStartDate, :totalNetAssets,
+                 :yearToDateReturn
+              )
+        ]]>
+    </entry>
+</properties>
