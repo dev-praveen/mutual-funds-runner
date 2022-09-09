@@ -4,6 +4,7 @@ import com.funds.batch.model.MutualFund;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.DefaultBatchConfigurer;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
@@ -23,6 +24,7 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 
 import javax.sql.DataSource;
 import java.time.LocalDate;
@@ -33,7 +35,7 @@ import java.time.format.DateTimeParseException;
 @Configuration
 @EnableBatchProcessing
 @PropertySource("classpath:sql/fund_queries.xml")
-public class MutualFundsRunnerBatchConfiguration {
+public class MutualFundsRunnerBatchConfiguration extends DefaultBatchConfigurer {
 
   @Value("${mfInsertQuery}")
   private String mfInsertQuery;
@@ -42,8 +44,12 @@ public class MutualFundsRunnerBatchConfiguration {
   private String fileLocation;
 
   @Autowired private JobBuilderFactory jobBuilderFactory;
-
   @Autowired private StepBuilderFactory stepBuilderFactory;
+
+  @Override
+  public void setDataSource(DataSource dataSource) {
+    super.setDataSource(dataSource);
+  }
 
   @Bean
   public ConversionService localDateConversionService() {
@@ -87,11 +93,6 @@ public class MutualFundsRunnerBatchConfiguration {
   }
 
   @Bean
-  public MutualFundItemProcessor processor() {
-    return new MutualFundItemProcessor();
-  }
-
-  @Bean
   public JdbcBatchItemWriter<MutualFund> writer(DataSource dataSource) {
     return new JdbcBatchItemWriterBuilder<MutualFund>()
         .itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
@@ -102,12 +103,7 @@ public class MutualFundsRunnerBatchConfiguration {
 
   @Bean
   public Job importUserJob(JobCompletionNotificationListener listener, Step step1) {
-    return jobBuilderFactory
-        .get("mutualfundjob")
-        .listener(listener)
-        .flow(step1)
-        .end()
-        .build();
+    return jobBuilderFactory.get("mutualfundjob").listener(listener).flow(step1).end().build();
   }
 
   @Bean
@@ -116,8 +112,8 @@ public class MutualFundsRunnerBatchConfiguration {
         .get("step1")
         .<MutualFund, MutualFund>chunk(10)
         .reader(reader())
-        .processor(processor())
         .writer(writer)
+        .taskExecutor(new SimpleAsyncTaskExecutor())
         .build();
   }
 
