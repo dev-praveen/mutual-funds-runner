@@ -1,8 +1,6 @@
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/postgres
-    username: {DB_USER_NAME}
-    password: {DB_PASSWORD}
+    username: ${db_user_name}
+    password: ${db_password}
     driver-class-name: org.postgresql.Driver
-mf:
-  input-file-location: /home/praveen/MutualFundsOut.csv

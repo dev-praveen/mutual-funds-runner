@@ -23,6 +23,7 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 
@@ -39,9 +40,6 @@ public class MutualFundsRunnerBatchConfiguration extends DefaultBatchConfigurer 
 
   @Value("${mfInsertQuery}")
   private String mfInsertQuery;
-
-  @Value("${mf.input-file-location}")
-  private String fileLocation;
 
   @Autowired private JobBuilderFactory jobBuilderFactory;
   @Autowired private StepBuilderFactory stepBuilderFactory;
@@ -78,7 +76,7 @@ public class MutualFundsRunnerBatchConfiguration extends DefaultBatchConfigurer 
   public FlatFileItemReader<MutualFund> reader() {
     return new FlatFileItemReaderBuilder<MutualFund>()
         .name("csvFileReader")
-        .resource(new FileSystemResource(fileLocation))
+        .resource(new ClassPathResource("MutualFundsOut.csv"))
         .linesToSkip(1)
         .delimited()
         .names(getHeaderNames())
