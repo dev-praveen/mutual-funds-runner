@@ -26,4 +26,52 @@
               )
         ]]>
     </entry>
+    <entry key="top10FundsQuery">
+        <![CDATA[
+            SELECT
+              *
+            FROM
+              mutual_fund mf
+            WHERE
+              mf.fund_family IN (
+                SELECT
+                  hi_funds.fund_family
+                FROM
+                  (
+                    SELECT
+                      fund_family,
+                      COUNT(1) AS funds_family_count,
+                      RANK() OVER(
+                                    ORDER BY
+                                    COUNT(1) DESC
+                                 ) AS rank
+                    FROM
+                      mutual_fund
+                    GROUP BY
+                    fund_family limit 10
+                ) hi_funds )
+        ]]>
+    </entry>
+    <entry key="topMfInsertQuery">
+        <![CDATA[
+            INSERT INTO TOP_MUTUAL_FUND(
+              FUND_ID, FUND_SYMBOL, FUND_SHORT_NAME,
+              FUND_LONG_NAME, INITIAL_INVESTMENT,
+              SUBSEQUENT_INVESTMENT, FUND_CATEGORY,
+              FUND_FAMILY, MANAGEMENT_NAME,
+              MANAGEMENT_BIO, MANAGEMENT_START_DATE,
+              TOTAL_NET_ASSETS, YEAR_TO_DATE_RETURN
+            )
+            VALUES
+              (
+                 :fundId, :fundSymbol,
+                 :fundShortName, :fundLongName,
+                 :initialInvestment, :subsequentInvestment,
+                 :fundCategory, :fundFamily,
+                 :managementName, :managementBio,
+                 :managementStartDate, :totalNetAssets,
+                 :yearToDateReturn
+              )
+        ]]>
+    </entry>
 </properties>

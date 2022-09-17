@@ -1,6 +1,8 @@
 package com.funds.batch.config;
 
+import com.funds.batch.mapper.MutualFundRowMapper;
 import com.funds.batch.model.MutualFund;
+import com.funds.batch.model.TopMutualFund;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -8,10 +10,11 @@ import org.springframework.batch.core.configuration.annotation.DefaultBatchConfi
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
-import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
+import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
+import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
@@ -25,8 +28,6 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
-
 import javax.sql.DataSource;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -40,6 +41,12 @@ public class MutualFundsRunnerBatchConfiguration extends DefaultBatchConfigurer 
 
   @Value("${mfInsertQuery}")
   private String mfInsertQuery;
+
+  @Value("${top10FundsQuery}")
+  private String top10FundsQuery;
+
+  @Value("${topMfInsertQuery}")
+  private String topMfInsertQuery;
 
   @Autowired private JobBuilderFactory jobBuilderFactory;
   @Autowired private StepBuilderFactory stepBuilderFactory;
@@ -100,8 +107,34 @@ public class MutualFundsRunnerBatchConfiguration extends DefaultBatchConfigurer 
   }
 
   @Bean
-  public Job importUserJob(JobCompletionNotificationListener listener, Step step1) {
-    return jobBuilderFactory.get("mutualfundjob").listener(listener).flow(step1).end().build();
+  public JdbcCursorItemReader<MutualFund> mfItemReader(DataSource dataSource) {
+
+    return new JdbcCursorItemReaderBuilder<MutualFund>()
+        .dataSource(dataSource)
+        .name("mfTableReader")
+        .sql(top10FundsQuery)
+        .rowMapper(new MutualFundRowMapper())
+        .build();
+  }
+
+  @Bean
+  public JdbcBatchItemWriter<TopMutualFund> topFundwriter(DataSource dataSource) {
+    return new JdbcBatchItemWriterBuilder<TopMutualFund>()
+        .itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
+        .sql(topMfInsertQuery)
+        .dataSource(dataSource)
+        .build();
+  }
+
+  @Bean
+  public Job mutualfundjob(JobCompletionNotificationListener listener, Step step1, Step step2) {
+    return jobBuilderFactory
+        .get("mutualfundjob")
+        .listener(listener)
+        .flow(step1)
+        .next(step2)
+        .end()
+        .build();
   }
 
   @Bean
@@ -111,7 +144,16 @@ public class MutualFundsRunnerBatchConfiguration extends DefaultBatchConfigurer 
         .<MutualFund, MutualFund>chunk(10)
         .reader(reader())
         .writer(writer)
-        .taskExecutor(new SimpleAsyncTaskExecutor())
+        .build();
+  }
+
+  @Bean
+  public Step step2(JdbcBatchItemWriter<TopMutualFund> topFundwriter, DataSource dataSource) {
+    return stepBuilderFactory
+        .get("step2")
+        .<MutualFund, TopMutualFund>chunk(10)
+        .reader(mfItemReader(dataSource))
+        .writer(topFundwriter)
         .build();
   }
 

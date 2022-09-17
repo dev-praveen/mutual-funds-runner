@@ -18,7 +18,9 @@ public class JobCompletionNotificationListener extends JobExecutionListenerSuppo
   public void beforeJob(JobExecution jobExecution) {
 
     jdbcTemplate.execute("DELETE FROM MUTUAL_FUND");
-    log.info("deleted all rows in MUTUAL_FUND table");
+    log.debug("deleted all rows in MUTUAL_FUND table");
+    jdbcTemplate.execute("DELETE FROM TOP_MUTUAL_FUND");
+    log.debug("deleted all rows in TOP_MUTUAL_FUND table");
   }
 
   @Override
